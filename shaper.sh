@@ -129,9 +129,6 @@ if [ "$1" = "start" ]; then
     tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 2 quantum 1500
     tc qdisc add dev $WAN parent 2:4 sfq perturb 10
 
-
-
-
         while read arg1 arg2 arg3 arg4; do
             if [ "$arg2" = "filter" ]; then
                 echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
