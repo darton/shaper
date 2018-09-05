@@ -47,15 +47,7 @@ if [ "$1" = "start" ]; then
         BURST="burst 15k"
 
     CONFIG_LIST=$(grep -v filter $confdir/$shaper_file |grep -v \#)
-
     if [ "$CONFIG_LIST" != "" ]; then
-
-            for OCTETS in $(grep filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u); do
-                iptables -t mangle -N COUNTERSIN$OCTETS
-                iptables -t mangle -N COUNTERSOUT$OCTETS
-                iptables -t mangle -I FORWARD -i $WAN -j COUNTERSIN$OCTETS
-                iptables -t mangle -I FORWARD -o $WAN -j COUNTERSOUT$OCTETS
-            done
 
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
@@ -91,8 +83,6 @@ if [ "$1" = "start" ]; then
     echo WAN_DEFAULT_LIMIT=$WAN_DEFAULT_LIMIT
     echo GW_TO_LAN_LIMIT=$GW_TO_LAN_LIMIT
     echo GW_TO_WAN_LIMIT=$GW_TO_WAN_LIMIT
-
-
 #LAN
 # Set global limit for LAN interface
     tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
@@ -123,15 +113,22 @@ if [ "$1" = "start" ]; then
     tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 2 quantum 1500
     tc qdisc add dev $WAN parent 2:4 sfq perturb 10
 
-    OCTET_LIST=$(grep filter $confdir/$shaper_file |grep -v \#)
-
+        NETWORK_LIST=$(cat $confdir/$shaper_file |grep filter |awk '{print $3}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
+	for net in $NETWORK_LIST; do
+    	    echo $net | { IFS='.' read -r octet1 octet2 octet3;
+    	    iptables -t mangle -N COUNTERSIN$octet2$octet3;
+    	    iptables -t mangle -N COUNTERSOUT$octet2$octet3;
+    	    iptables -t mangle -I FORWARD -i $WAN -d $net.0/24 -j COUNTERSIN$octet2$octet3;
+    	    iptables -t mangle -I FORWARD -o $WAN -s $net.0/24 -j COUNTERSOUT$octet2$octet3;}
+	done
+        
+        OCTET_LIST=$(grep filter $confdir/$shaper_file |grep -v \#)
         if [ "$OCTET_LIST" != "" ]; then
-
             while read arg1 arg2 arg3 arg4; do
                 if [ "$arg2" = "filter" ]; then
                     echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
-                    iptables -t mangle -A COUNTERSOUT$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
-                    iptables -t mangle -A COUNTERSIN$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
+                    iptables -t mangle -A COUNTERSOUT$octet2$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
+                    iptables -t mangle -A COUNTERSIN$octet2$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
                 fi
                 if [ "$arg2" = "class_up" ]; then
                     tc class add dev $WAN parent 2:1 classid 2:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
@@ -143,10 +140,10 @@ if [ "$1" = "start" ]; then
                 fi
             done < <(cat $confdir/$shaper_file|grep -v \#)
         else
-        echo Brak konfiguracji dla komputerów klientów
+        echo "Brak konfiguracji dla komputerów klientów"
         fi
     else
-    echo Plik nie ma prawidłowej konfiguracji
+    echo "Plik nie ma prawidłowej konfiguracji"
     fi
 fi
 }
