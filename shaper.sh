@@ -23,7 +23,7 @@ LAN=enp0s8
 
 function shaper_cmd {
 
-    if [ "$1" = "stop" ]; then
+if [ "$1" = "stop" ]; then
         for IPT_TABLE_ELEMENT in $(iptables -t mangle -L FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
             iptables -t mangle -D FORWARD -o $WAN -j $IPT_TABLE_ELEMENT
             iptables -t mangle -F $IPT_TABLE_ELEMENT
@@ -38,24 +38,35 @@ function shaper_cmd {
     iptables -t mangle -F OUTPUT
     tc qdisc del dev $LAN root  2> /dev/null
     tc qdisc del dev $WAN root  2> /dev/null
-    fi
+fi
 
-    if [ "$1" = "start" ]; then
+
+if [ "$1" = "start" ]; then
 
         shaper_cmd stop
         BURST="burst 15k"
 
-        for OCTETS in $(grep filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u); do
-            iptables -t mangle -N COUNTERSIN$OCTETS
-            iptables -t mangle -N COUNTERSOUT$OCTETS
-            iptables -t mangle -I FORWARD -i $WAN -j COUNTERSIN$OCTETS
-            iptables -t mangle -I FORWARD -o $WAN -j COUNTERSOUT$OCTETS
-        done
+    OCTET_LIST=$(grep filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u)
+
+        if [ "$OCTET_LIST" != "" ]; then
+
+            for OCTETS in $(grep filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u); do
+                iptables -t mangle -N COUNTERSIN$OCTETS
+                iptables -t mangle -N COUNTERSOUT$OCTETS
+                iptables -t mangle -I FORWARD -i $WAN -j COUNTERSIN$OCTETS
+                iptables -t mangle -I FORWARD -o $WAN -j COUNTERSOUT$OCTETS
+            done
 
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
+        fi
+
 
         delimiter=$IFS
+
+    CONFIG_LIST=$(grep -v filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u)
+
+    if [ "$CONFIG_LIST" != "" ]; then
 
         while IFS='=' read arg1 arg2; do
             if [ "$arg1" = "ISP_RX_LIMIT" ]; then
@@ -87,6 +98,7 @@ function shaper_cmd {
     echo GW_TO_LAN_LIMIT=$GW_TO_LAN_LIMIT
     echo GW_TO_WAN_LIMIT=$GW_TO_WAN_LIMIT
 
+
 #LAN
 # Set global limit for LAN interface
     tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
@@ -117,6 +129,9 @@ function shaper_cmd {
     tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 2 quantum 1500
     tc qdisc add dev $WAN parent 2:4 sfq perturb 10
 
+
+
+
         while read arg1 arg2 arg3 arg4; do
             if [ "$arg2" = "filter" ]; then
                 echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
@@ -132,7 +147,10 @@ function shaper_cmd {
                 tc qdisc add dev $LAN parent 1:$arg1 sfq perturb 10
             fi
         done < <(cat $confdir/$shaper_file|grep -v \#)
+    else
+    echo Nie ma konfiguracji dla komputerów
     fi
+fi
 }
 
 function shaper_status {
@@ -163,3 +181,4 @@ case "$1" in
     ;;
 
 esac
+
