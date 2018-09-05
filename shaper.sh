@@ -40,11 +40,10 @@ if [ "$1" = "stop" ]; then
     tc qdisc del dev $WAN root  2> /dev/null
 fi
 
-
 if [ "$1" = "start" ]; then
 
-        shaper_cmd stop
-        BURST="burst 15k"
+    shaper_cmd stop
+    BURST="burst 15k"
 
     CONFIG_LIST=$(grep -v filter $confdir/$shaper_file |grep -v \#)
     if [ "$CONFIG_LIST" != "" ]; then
@@ -83,6 +82,7 @@ if [ "$1" = "start" ]; then
     echo WAN_DEFAULT_LIMIT=$WAN_DEFAULT_LIMIT
     echo GW_TO_LAN_LIMIT=$GW_TO_LAN_LIMIT
     echo GW_TO_WAN_LIMIT=$GW_TO_WAN_LIMIT
+    
 #LAN
 # Set global limit for LAN interface
     tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
