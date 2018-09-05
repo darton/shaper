@@ -46,9 +46,9 @@ if [ "$1" = "start" ]; then
         shaper_cmd stop
         BURST="burst 15k"
 
-    OCTET_LIST=$(grep filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u)
+    CONFIG_LIST=$(grep -v filter $confdir/$shaper_file |grep -v \#)
 
-        if [ "$OCTET_LIST" != "" ]; then
+    if [ "$CONFIG_LIST" != "" ]; then
 
             for OCTETS in $(grep filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u); do
                 iptables -t mangle -N COUNTERSIN$OCTETS
@@ -59,14 +59,8 @@ if [ "$1" = "start" ]; then
 
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
-        fi
-
 
         delimiter=$IFS
-
-    CONFIG_LIST=$(grep -v filter $confdir/$shaper_file |grep -v \#| awk '{print $3}'| awk -F\. '{print $3}'|sort -u)
-
-    if [ "$CONFIG_LIST" != "" ]; then
 
         while IFS='=' read arg1 arg2; do
             if [ "$arg1" = "ISP_RX_LIMIT" ]; then
@@ -129,23 +123,30 @@ if [ "$1" = "start" ]; then
     tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 2 quantum 1500
     tc qdisc add dev $WAN parent 2:4 sfq perturb 10
 
-        while read arg1 arg2 arg3 arg4; do
-            if [ "$arg2" = "filter" ]; then
-                echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
-                iptables -t mangle -A COUNTERSOUT$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
-                iptables -t mangle -A COUNTERSIN$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
-            fi
-            if [ "$arg2" = "class_up" ]; then
-                tc class add dev $WAN parent 2:1 classid 2:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
-                tc qdisc add dev $WAN parent 2:$arg1 sfq perturb 10
-            fi
-            if [ "$arg2" = "class_down" ]; then
-                tc class add dev $LAN parent 1:2 classid 1:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
-                tc qdisc add dev $LAN parent 1:$arg1 sfq perturb 10
-            fi
-        done < <(cat $confdir/$shaper_file|grep -v \#)
+    OCTET_LIST=$(grep filter $confdir/$shaper_file |grep -v \#)
+
+        if [ "$OCTET_LIST" != "" ]; then
+
+            while read arg1 arg2 arg3 arg4; do
+                if [ "$arg2" = "filter" ]; then
+                    echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
+                    iptables -t mangle -A COUNTERSOUT$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
+                    iptables -t mangle -A COUNTERSIN$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
+                fi
+                if [ "$arg2" = "class_up" ]; then
+                    tc class add dev $WAN parent 2:1 classid 2:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
+                    tc qdisc add dev $WAN parent 2:$arg1 sfq perturb 10
+                fi
+                if [ "$arg2" = "class_down" ]; then
+                    tc class add dev $LAN parent 1:2 classid 1:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
+                    tc qdisc add dev $LAN parent 1:$arg1 sfq perturb 10
+                fi
+            done < <(cat $confdir/$shaper_file|grep -v \#)
+        else
+        echo Brak konfiguracji dla komputerów klientów
+        fi
     else
-    echo Nie ma konfiguracji dla komputerów
+    echo Plik nie ma prawidłowej konfiguracji
     fi
 fi
 }
@@ -178,4 +179,3 @@ case "$1" in
     ;;
 
 esac
-
