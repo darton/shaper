@@ -68,7 +68,7 @@ if [ "$1" = "start" ]; then
         BURST="burst 15k"
 
 #LAN
-	if [ ! $LAM}" ]; then 
+	if [ ! $LAN ]; then 
 # Set global limit for LAN interface
         tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
         tc class add dev $LAN parent 1:0 classid 1:1 htb rate 900000kbit ceil 900000kbit $BURST quantum 1500
@@ -86,7 +86,7 @@ if [ "$1" = "start" ]; then
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
 	fi
 #WAN
-	if [ ! $WAM}" ]; then 
+	if [ ! $WAN ]; then 
 # Set limit for all traffic from WAN to Internet
         tc qdisc add dev $WAN root handle 2:0 htb default 11 r2q 1
         tc class add dev $WAN parent 2:0 classid 2:1 htb rate $ISP_TX_LIMIT ceil $ISP_TX_LIMIT $BURST quantum 1500
