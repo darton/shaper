@@ -123,7 +123,8 @@ if [ "$1" = "start" ]; then
             fi
         done < <(cat $confdir/$shaper_file|grep -v \#)
     fi
-    if [ "$1" = "stats" ]; then
+
+if [ "$1" = "stats" ]; then
         for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
             iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $8 " "$2}' |grep -v 0.0.0.0 >> /tmp/upload.tmp
         done
