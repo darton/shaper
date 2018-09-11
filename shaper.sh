@@ -121,7 +121,7 @@ if [ "$1" = "start" ]; then
                 iptables -t mangle -A COUNTERSOUT$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
                 iptables -t mangle -A COUNTERSIN$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
             fi
-        done < $confdir/$shaper_file
+        done < <(cat $confdir/$shaper_file|grep -v \#)
     fi
     if [ "$1" = "stats" ]; then
         for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
