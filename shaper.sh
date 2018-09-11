@@ -68,6 +68,7 @@ if [ "$1" = "start" ]; then
         BURST="burst 15k"
 
 #LAN
+	if [ ! $LAM}" ]; then 
 # Set global limit for LAN interface
         tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
         tc class add dev $LAN parent 1:0 classid 1:1 htb rate 900000kbit ceil 900000kbit $BURST quantum 1500
@@ -83,7 +84,9 @@ if [ "$1" = "start" ]; then
         tc class add dev $LAN parent 1:1 classid 1:4 htb rate 128kbit ceil $GW_TO_LAN_LIMIT $BURST prio 2 quantum 1500
         tc qdisc add dev $LAN parent 1:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
+	fi
 #WAN
+	if [ ! $WAM}" ]; then 
 # Set limit for all traffic from WAN to Internet
         tc qdisc add dev $WAN root handle 2:0 htb default 11 r2q 1
         tc class add dev $WAN parent 2:0 classid 2:1 htb rate $ISP_TX_LIMIT ceil $ISP_TX_LIMIT $BURST quantum 1500
@@ -97,7 +100,7 @@ if [ "$1" = "start" ]; then
         tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 2 quantum 1500
         tc qdisc add dev $WAN parent 2:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
-
+	fi
 #Set limit for Customers host
         network_list=$(cat $confdir/$shaper_file |grep filter |awk '{print $3}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
         for net in $network_list; do
