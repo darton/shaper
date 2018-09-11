@@ -24,20 +24,10 @@ LAN=enp0s8
 function shaper_cmd {
 
 if [ "$1" = "stop" ]; then
-        for IPT_TABLE_ELEMENT in $(iptables -t mangle -L FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
-            iptables -t mangle -D FORWARD -o $WAN -j $IPT_TABLE_ELEMENT
-            iptables -t mangle -F $IPT_TABLE_ELEMENT
-            iptables -t mangle -X $IPT_TABLE_ELEMENT
-        done
-        for IPT_TABLE_ELEMENT in $(iptables -t mangle -L FORWARD |grep COUNTERSIN |awk '{print $1}'); do
-            iptables -t mangle -D FORWARD -i $WAN -j $IPT_TABLE_ELEMENT
-            iptables -t mangle -F $IPT_TABLE_ELEMENT
-            iptables -t mangle -X $IPT_TABLE_ELEMENT
-        done
-
-    iptables -t mangle -F OUTPUT
-    tc qdisc del dev $LAN root  2> /dev/null
-    tc qdisc del dev $WAN root  2> /dev/null
+	tc qdisc del dev $LAN root 2> /dev/null
+	tc qdisc del dev $WAN root 2> /dev/null
+	iptables -t mangle -F
+	iptables -t mangle -X
 fi
 
 if [ "$1" = "start" ]; then
