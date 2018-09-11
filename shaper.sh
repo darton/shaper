@@ -24,10 +24,10 @@ LAN=enp0s8
 function shaper_cmd {
 
 if [ "$1" = "stop" ]; then
-	tc qdisc del dev $LAN root 2> /dev/null
-	tc qdisc del dev $WAN root 2> /dev/null
-	iptables -t mangle -F
-	iptables -t mangle -X
+        tc qdisc del dev $LAN root 2> /dev/null
+        tc qdisc del dev $WAN root 2> /dev/null
+        iptables -t mangle -F
+        iptables -t mangle -X
 fi
 
 if [ "$1" = "start" ]; then
@@ -68,7 +68,8 @@ if [ "$1" = "start" ]; then
         BURST="burst 15k"
 
 #LAN
-	if [ ! $LAN ]; then 
+        if [ ! -z "$LAN" ]; then
+
 # Set global limit for LAN interface
         tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
         tc class add dev $LAN parent 1:0 classid 1:1 htb rate 900000kbit ceil 900000kbit $BURST quantum 1500
@@ -84,9 +85,11 @@ if [ "$1" = "start" ]; then
         tc class add dev $LAN parent 1:1 classid 1:4 htb rate 128kbit ceil $GW_TO_LAN_LIMIT $BURST prio 2 quantum 1500
         tc qdisc add dev $LAN parent 1:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
-	fi
+        fi
+
 #WAN
-	if [ ! $WAN ]; then 
+        if [ ! -z "$WAN" ]; then
+
 # Set limit for all traffic from WAN to Internet
         tc qdisc add dev $WAN root handle 2:0 htb default 11 r2q 1
         tc class add dev $WAN parent 2:0 classid 2:1 htb rate $ISP_TX_LIMIT ceil $ISP_TX_LIMIT $BURST quantum 1500
@@ -100,7 +103,8 @@ if [ "$1" = "start" ]; then
         tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 2 quantum 1500
         tc qdisc add dev $WAN parent 2:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
-	fi
+        fi
+
 #Set limit for Customers host
         network_list=$(cat $confdir/$shaper_file |grep filter |awk '{print $3}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
         for net in $network_list; do
@@ -111,14 +115,18 @@ if [ "$1" = "start" ]; then
             iptables -t mangle -I FORWARD -o $WAN -s $net.0/24 -j COUNTERSOUT$octet3;}
         done
         while read arg1 arg2 arg3 arg4; do
+        if [ ! -z "$WAN" ]; then
             if [ "$arg2" = "class_up" ]; then
                 tc class add dev $WAN parent 2:1 classid 2:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
                 tc qdisc add dev $WAN parent 2:$arg1 sfq perturb 10
             fi
+        fi
+        if [ ! -z "$LAN" ]; then
             if [ "$arg2" = "class_down" ]; then
                 tc class add dev $LAN parent 1:2 classid 1:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
                 tc qdisc add dev $LAN parent 1:$arg1 sfq perturb 10
             fi
+        fi
             if [ "$arg2" = "filter" ]; then
                 echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
                 iptables -t mangle -A COUNTERSOUT$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
@@ -137,14 +145,37 @@ if [ "$1" = "stats" ]; then
         iptables -t mangle -Z
         join /tmp/upload.tmp /tmp/download.tmp | grep -v  " 0 0"
         rm /tmp/upload.tmp /tmp/download.tmp
-    fi
+fi
 
-if [ "$1" = "status" ]; then 
-    iptables -t mangle -L -n -v
+if [ "$1" = "status" ]; then
+
+    iptables -t mangle -nvL
+
+    echo
+    echo "$LAN interface"
+    echo "----------------"
     for TC_OPTIONS in qdisc class filter; do
-    tc -s $TC_OPTIONS show dev $LAN
-    tc -s $TC_OPTIONS show dev $WAN
+        if [ ! -z "$LAN" ]; then
+            echo
+            echo "$TC_OPTIONS"
+            echo "------"
+            tc $TC_OPTIONS show dev $LAN
+        fi
     done
+
+    echo
+    echo "$WAN interface"
+    echo "----------------"
+    for TC_OPTIONS in qdisc class filter; do
+        if [ ! -z "$WAN" ]; then
+            echo
+            echo "$TC_OPTIONS"
+            echo "------"
+            tc $TC_OPTIONS show dev $WAN
+        fi
+    done
+
+fi
 }
 
 case "$1" in
@@ -161,6 +192,9 @@ case "$1" in
     ;;
     'status')
         shaper_cmd status
+    ;;
+    'stats')
+        shaper_cmd stats
     ;;
         *)
         echo -e "\nUsage: shaper.sh start|stop|restart"
