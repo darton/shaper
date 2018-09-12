@@ -22,10 +22,14 @@ LAN=enp0s8
 #Default value when was not declared in shaper.conf file
 DEFAULT_ISP_RX_LIMIT=800000kbit
 DEFAULT_ISP_TX_LIMIT=800000kbit
-DEFAULT_GW_TO_LAN_LIMIT=100000kbit
-DEFAULT_GW_TO_WAN_LIMIT=100000kbit
-DEFAULT_LAN_UNCLASSIFIED_LIMIT=128kbit
-DEFAULT_WAN_UNCLASSIFIED_LIMIT=128kbit
+DEFAULT_GW_TO_LAN_CEIL_LIMIT=100000kbit
+DEFAULT_GW_TO_WAN_CEIL_LIMIT=100000kbit
+DEFAULT_GW_TO_LAN_RATE_LIMIT=1280kbit
+DEFAULT_GW_TO_WAN_RATE_LIMIT=1280kbit
+DEFAULT_LAN_UNCLASSIFIED_RATE_LIMIT=8kbit
+DEFAULT_WAN_UNCLASSIFIED_RATE_LIMIT=8kbit
+DEFAULT_LAN_UNCLASSIFIED_CEIL_LIMIT=1280kbit
+DEFAULT_WAN_UNCLASSIFIED_CEIL_LIMIT=1280kbit
 
 
 [[ -f $confdir/$shaper_file ]] || touch $confdir/$shaper_file
@@ -51,17 +55,29 @@ if [ "$1" = "start" ]; then
             if [ "$arg1" = "ISP_TX_LIMIT" ]; then
                 ISP_TX_LIMIT=$arg2
             fi
-            if [ "$arg1" = "LAN_UNCLASSIFIED_LIMIT" ]; then
-                LAN_UNCLASSIFIED_LIMIT=$arg2
+            if [ "$arg1" = "LAN_UNCLASSIFIED_RATE_LIMIT" ]; then
+                LAN_UNCLASSIFIED_RATE_LIMIT=$arg2
             fi
-            if [ "$arg1" = "WAN_UNCLASSIFIED_LIMIT" ]; then
-                WAN_UNCLASSIFIED_LIMIT=$arg2
+            if [ "$arg1" = "LAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
+                LAN_UNCLASSIFIED_CEIL_LIMIT=$arg2
             fi
-            if [ "$arg1" = "GW_TO_LAN_LIMIT" ]; then
-                GW_TO_LAN_LIMIT=$arg2
+            if [ "$arg1" = "WAN_UNCLASSIFIED_RATE_LIMIT" ]; then
+                WAN_UNCLASSIFIED_RATE_LIMIT=$arg2
             fi
-            if [ "$arg1" = "GW_TO_WAN_LIMIT" ]; then
-                GW_TO_WAN_LIMIT=$arg2
+            if [ "$arg1" = "WAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
+                WAN_UNCLASSIFIED_CEIL_LIMIT=$arg2
+            fi
+            if [ "$arg1" = "GW_TO_LAN_RATE_LIMIT" ]; then
+                GW_TO_LAN_RATE_LIMIT=$arg2
+            fi
+            if [ "$arg1" = "GW_TO_LAN_CEIL_LIMIT" ]; then
+                GW_TO_LAN_CEIL_LIMIT=$arg2
+            fi
+            if [ "$arg1" = "GW_TO_RATE_WAN_LIMIT" ]; then
+                GW_TO_WAN_RATE_LIMIT=$arg2
+            fi
+            if [ "$arg1" = "GW_TO_WAN_CEIL_LIMIT" ]; then
+                GW_TO_WAN_CEIL_LIMIT=$arg2
             fi
         done < <(cat $confdir/$shaper_file|grep -v \#)
 
@@ -73,25 +89,42 @@ if [ "$1" = "start" ]; then
             if [ -z "$ISP_TX_LIMIT" ]; then
                 ISP_TX_LIMIT=$DEFAULT_ISP_TX_LIMIT
             fi
-            if [ -z "$LAN_UNCLASSIFIED_LIMIT" ]; then
-                LAN_UNCLASSIFIED_LIMIT=$DEFAULT_LAN_UNCLASSIFIED_LIMIT
+            if [ -z "$LAN_UNCLASSIFIED_RATE_LIMIT" ]; then
+                LAN_UNCLASSIFIED_RATE_LIMIT=$DEFAULT_LAN_UNCLASSIFIED_RATE_LIMIT
             fi
-            if [ -z "$WAN_UNCLASSIFIED_LIMIT" ]; then
-                WAN_UNCLASSIFIED_LIMIT=$DEFAULT_WAN_UNCLASSIFIED_LIMIT
+            if [ -z "$LAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
+                LAN_UNCLASSIFIED_CEIL_LIMIT=$DEFAULT_LAN_UNCLASSIFIED_CEIL_LIMIT
             fi
-            if [ -z "$GW_TO_LAN_LIMIT" ]; then
-                GW_TO_LAN_LIMIT=$DEFAULT_GW_TO_LAN_LIMIT
+            if [ -z "$WAN_UNCLASSIFIED_RATE_LIMIT" ]; then
+                WAN_UNCLASSIFIED_RATE_LIMIT=$DEFAULT_WAN_UNCLASSIFIED_RATE_LIMIT
             fi
-            if [ -z "$GW_TO_WAN_LIMIT" ]; then
-                GW_TO_WAN_LIMIT=$DEFAULT_GW_TO_WAN_LIMIT
+            if [ -z "$WAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
+                WAN_UNCLASSIFIED_CEIL_LIMIT=$DEFAULT_WAN_UNCLASSIFIED_CEIL_LIMIT
             fi
+            if [ -z "$GW_TO_LAN_RATE_LIMIT" ]; then
+                GW_TO_LAN_RATE_LIMIT=$DEFAULT_GW_TO_LAN_RATE_LIMIT
+            fi
+            if [ -z "$GW_TO_LAN_CEIL_LIMIT" ]; then
+                GW_TO_LAN_CEIL_LIMIT=$DEFAULT_GW_TO_LAN_CEIL_LIMIT
+            fi
+            if [ -z "$GW_TO_WAN_RATE_LIMIT" ]; then
+                GW_TO_WAN_RATE_LIMIT=$DEFAULT_GW_TO_WAN_RATE_LIMIT
+            fi
+            if [ -z "$GW_TO_WAN_CEIL_LIMIT" ]; then
+                GW_TO_WAN_CEIL_LIMIT=$DEFAULT_GW_TO_WAN_CEIL_LIMIT
+            fi
+
 
         echo ISP_RX_LIMIT=$ISP_RX_LIMIT
         echo ISP_TX_LIMIT=$ISP_TX_LIMIT
-        echo LAN_NONCLASIFIED_LIMIT=$LAN_NONCLASIFIED_LIMIT
-        echo WAN_NONCLASIFIED_LIMIT=$WAN_NONCLASIFIED_LIMIT
-        echo GW_TO_LAN_LIMIT=$GW_TO_LAN_LIMIT
-        echo GW_TO_WAN_LIMIT=$GW_TO_WAN_LIMIT
+        echo LAN_UNCLASSIFIED_RATE_LIMIT=$LAN_UNCLASSIFIED_RATE_LIMIT
+        echo LAN_UNCLASSIFIED_CEIL_LIMIT=$LAN_UNCLASSIFIED_CEIL_LIMIT
+        echo WAN_UNCLASSIFIED_RATE_LIMIT=$WAN_UNCLASSIFIED_RATE_LIMIT
+        echo WAN_UNCLASSIFIED_CEIL_LIMIT=$WAN_UNCLASSIFIED_CEIL_LIMIT
+        echo GW_TO_LAN_RATE_LIMIT=$GW_TO_LAN_RATE_LIMIT
+        echo GW_TO_LAN_CEIL_LIMIT=$GW_TO_LAN_CEIL_LIMIT
+        echo GW_TO_WAN_RATE_LIMIT=$GW_TO_WAN_RATE_LIMIT
+        echo GW_TO_WAN_CEIL_LIMIT=$GW_TO_WAN_CEIL_LIMIT
 
         BURST="burst 15k"
 
@@ -106,13 +139,14 @@ if [ "$1" = "start" ]; then
         tc class add dev $LAN parent 1:1 classid 1:2 htb rate $ISP_RX_LIMIT ceil $ISP_RX_LIMIT $BURST quantum 1500
 
 #Set default limit for traffic from Internet to LAN
-        tc class add dev $LAN parent 1:1 classid 1:3 htb rate 8kbit ceil $LAN_UNCLASSIFIED_LIMIT prio 7 quantum 1500
+        tc class add dev $LAN parent 1:1 classid 1:3 htb rate $LAN_UNCLASSIFIED_RATE_LIMIT ceil $LAN_UNCLASSIFIED_CEIL_LIMIT prio 7 quantum 1500
         tc qdisc add dev $LAN parent 1:3 sfq perturb 10
 
 #Set limit from for traffic from GATEWAY to LAN
-        tc class add dev $LAN parent 1:1 classid 1:4 htb rate 128kbit ceil $GW_TO_LAN_LIMIT $BURST prio 4 quantum 1500
+        tc class add dev $LAN parent 1:1 classid 1:4 htb rate $GW_TO_LAN_RATE_LIMIT ceil $GW_TO_LAN_CEIL_LIMIT $BURST prio 4 quantum 1500
         tc qdisc add dev $LAN parent 1:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
+
         fi
 
 #WAN
@@ -123,25 +157,27 @@ if [ "$1" = "start" ]; then
         tc class add dev $WAN parent 2:0 classid 2:1 htb rate $ISP_TX_LIMIT ceil $ISP_TX_LIMIT $BURST quantum 1500
 
 # Set default limit for traffic from WAN to Internet
-        tc class add dev $WAN parent 2:1 classid 2:3 htb rate 8kbit ceil $WAN_UNCLASSIFIED_LIMIT prio 7 quantum 1500
+        tc class add dev $WAN parent 2:1 classid 2:3 htb rate $WAN_UNCLASSIFIED_RATE_LIMIT ceil $WAN_UNCLASSIFIED_CEIL_LIMIT prio 7 quantum 1500
         tc qdisc add dev $WAN parent 2:3 sfq perturb 10
-        tc filter add dev $WAN parent 2:0 protocol ip prio 9 u32 match ip dst 0/0 flowid 2:3
 
 #Set limit for traffic from GATEWAY to WAN
-        tc class add dev $WAN parent 2:1 classid 2:4 htb rate 128kbit ceil $GW_TO_WAN_LIMIT $BURST prio 4 quantum 1500
+        tc class add dev $WAN parent 2:1 classid 2:4 htb rate $GW_TO_WAN_RATE_LIMIT ceil $GW_TO_WAN_CEIL_LIMIT $BURST prio 4 quantum 1500
         tc qdisc add dev $WAN parent 2:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
+
         fi
 
 #Set limit for Customers host
+
         network_list=$(cat $confdir/$shaper_file |grep filter |awk '{print $3}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
+
         for net in $network_list; do
-            echo $net | { IFS='.' read -r octet1 octet2 octet3;
-            iptables -t mangle -N COUNTERSIN$octet3;
-            iptables -t mangle -N COUNTERSOUT$octet3;
-            iptables -t mangle -I FORWARD -i $WAN -d $net.0/24 -j COUNTERSIN$octet3;
-            iptables -t mangle -I FORWARD -o $WAN -s $net.0/24 -j COUNTERSOUT$octet3;}
+            iptables -t mangle -N COUNTERSIN$net
+            iptables -t mangle -N COUNTERSOUT$net
+            iptables -t mangle -I FORWARD -i $WAN -d $net.0/24 -j COUNTERSIN$net
+            iptables -t mangle -I FORWARD -o $WAN -s $net.0/24 -j COUNTERSOUT$net
         done
+
         while read arg1 arg2 arg3 arg4; do
         if [ ! -z "$WAN" ]; then
             if [ "$arg2" = "class_up" ]; then
@@ -157,13 +193,14 @@ if [ "$1" = "start" ]; then
         fi
             if [ "$arg2" = "filter" ]; then
                 echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
-                iptables -t mangle -A COUNTERSOUT$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
-                iptables -t mangle -A COUNTERSIN$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
+                iptables -t mangle -A COUNTERSOUT$octet1.$octet2.$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
+                iptables -t mangle -A COUNTERSIN$octet1.$octet2.$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
             fi
         done < <(cat $confdir/$shaper_file|grep -v \#)
 fi
 
 if [ "$1" = "stats" ]; then
+
         for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
             iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $8 " "$2}' |grep -v 0.0.0.0 >> /tmp/upload.tmp
         done
@@ -173,6 +210,7 @@ if [ "$1" = "stats" ]; then
         iptables -t mangle -Z
         join /tmp/upload.tmp /tmp/download.tmp | grep -v  " 0 0"
         rm /tmp/upload.tmp /tmp/download.tmp
+
 fi
 
 if [ "$1" = "status" ]; then
