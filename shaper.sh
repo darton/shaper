@@ -24,8 +24,8 @@ DEFAULT_ISP_RX_LIMIT=800000kbit
 DEFAULT_ISP_TX_LIMIT=800000kbit
 DEFAULT_GW_TO_LAN_LIMIT=100000kbit
 DEFAULT_GW_TO_WAN_LIMIT=100000kbit
-DEFAULT_LAN_NONCLASIFIED_LIMIT=128kbit
-DEFAULT_WAN_NONCLASIFIED_LIMIT=128kbit
+DEFAULT_LAN_UNCLASSIFIED_LIMIT=128kbit
+DEFAULT_WAN_UNCLASSIFIED_LIMIT=128kbit
 
 
 [[ -f $confdir/$shaper_file ]] || touch $confdir/$shaper_file
@@ -51,11 +51,11 @@ if [ "$1" = "start" ]; then
             if [ "$arg1" = "ISP_TX_LIMIT" ]; then
                 ISP_TX_LIMIT=$arg2
             fi
-            if [ "$arg1" = "LAN_DEFAULT_LIMIT" ]; then
-                LAN_DEFAULT_LIMIT=$arg2
+            if [ "$arg1" = "LAN_UNCLASSIFIED_LIMIT" ]; then
+                LAN_UNCLASSIFIED_LIMIT=$arg2
             fi
-            if [ "$arg1" = "WAN_DEFAULT_LIMIT" ]; then
-                WAN_DEFAULT_LIMIT=$arg2
+            if [ "$arg1" = "WAN_UNCLASSIFIED_LIMIT" ]; then
+                WAN_UNCLASSIFIED_LIMIT=$arg2
             fi
             if [ "$arg1" = "GW_TO_LAN_LIMIT" ]; then
                 GW_TO_LAN_LIMIT=$arg2
@@ -73,11 +73,11 @@ if [ "$1" = "start" ]; then
             if [ -z "$ISP_TX_LIMIT" ]; then
                 ISP_TX_LIMIT=$DEFAULT_ISP_TX_LIMIT
             fi
-            if [ -z "$LAN_NONCLASIFIED_LIMIT" ]; then
-                LAN_NONCLASIFIED_LIMIT=$DEFAULT_LAN_NONCLASIFIED_LIMIT
+            if [ -z "$LAN_UNCLASSIFIED_LIMIT" ]; then
+                LAN_UNCLASSIFIED_LIMIT=$DEFAULT_LAN_UNCLASSIFIED_LIMIT
             fi
-            if [ -z "$WAN_NONCLASIFIED_LIMIT" ]; then
-                WAN_NONCLASIFIED_LIMIT=$DEFAULT_WAN_NONCLASIFIED_LIMIT
+            if [ -z "$WAN_UNCLASSIFIED_LIMIT" ]; then
+                WAN_UNCLASSIFIED_LIMIT=$DEFAULT_WAN_UNCLASSIFIED_LIMIT
             fi
             if [ -z "$GW_TO_LAN_LIMIT" ]; then
                 GW_TO_LAN_LIMIT=$DEFAULT_GW_TO_LAN_LIMIT
@@ -106,7 +106,7 @@ if [ "$1" = "start" ]; then
         tc class add dev $LAN parent 1:1 classid 1:2 htb rate $ISP_RX_LIMIT ceil $ISP_RX_LIMIT $BURST quantum 1500
 
 #Set default limit for traffic from Internet to LAN
-        tc class add dev $LAN parent 1:1 classid 1:3 htb rate 8kbit ceil $LAN_NONCLASIFIED_LIMIT prio 7 quantum 1500
+        tc class add dev $LAN parent 1:1 classid 1:3 htb rate 8kbit ceil $LAN_UNCLASSIFIED_LIMIT prio 7 quantum 1500
         tc qdisc add dev $LAN parent 1:3 sfq perturb 10
 
 #Set limit from for traffic from GATEWAY to LAN
@@ -123,7 +123,7 @@ if [ "$1" = "start" ]; then
         tc class add dev $WAN parent 2:0 classid 2:1 htb rate $ISP_TX_LIMIT ceil $ISP_TX_LIMIT $BURST quantum 1500
 
 # Set default limit for traffic from WAN to Internet
-        tc class add dev $WAN parent 2:1 classid 2:3 htb rate 8kbit ceil $WAN_NONCLASIFIED_LIMIT prio 7 quantum 1500
+        tc class add dev $WAN parent 2:1 classid 2:3 htb rate 8kbit ceil $WAN_UNCLASSIFIED_LIMIT prio 7 quantum 1500
         tc qdisc add dev $WAN parent 2:3 sfq perturb 10
         tc filter add dev $WAN parent 2:0 protocol ip prio 9 u32 match ip dst 0/0 flowid 2:3
 
