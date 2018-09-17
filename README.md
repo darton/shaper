@@ -3,8 +3,8 @@ Wymagane oprogramowanie: iptables, ipset, iproute2.
 
 Plik musi zaczynać się od deklaracji poniższych parametrów. Jeśli te parametry nie zostaną podane, zostaną użyte domyślne parametry określone w pliku shaper.sh.
 
-ISP_RX_LIMIT=470000kbit</br>
-ISP_TX_LIMIT=470000kbit</br>
+ISP_RX_LIMIT=450000kbit</br>
+ISP_TX_LIMIT=450000kbit</br>
 GW_TO_LAN_RATE_LIMIT=100kbit</br>
 GW_TO_LAN_CEIL_LIMIT=200000kbit</br>
 GW_TO_WAN_RATE_LIMIT=100kbit</br>
@@ -20,7 +20,7 @@ WAN_UNCLASSIFIED_PRIORITY=7</br>
 LAN_HOSTS_PRIORITY=2</br>
 WAN_HOSTS_PRIORITY=2</br>
 
-ISP_RX_LIMIT oraz ISP_TX_LIMIT to wynikające z kontraktu z operatorem nadrzędnym parametry łącza dostępowego do sieci Internet pomniejszone o ok 5-10% aby uniknąc zapełniania kolejki modemu operatora.</br>
+ISP_RX_LIMIT oraz ISP_TX_LIMIT to wynikające z kontraktu z operatorem nadrzędnym parametry łącza dostępowego do sieci Internet pomniejszone o ok 10% aby uniknąc zapełniania kolejki modemu operatora.</br>
 
 GW_TO_LAN_RATE_LIMIT to gwarantowana prędkość dla ruchu wychodzącego do sieci LAN, którego źródłem jest Gateway na którym pracuje skrypt fw.sh</br>
 
