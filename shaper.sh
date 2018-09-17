@@ -54,42 +54,48 @@ if [ "$1" = "start" ]; then
 
         shaper_cmd stop
         delimiter=$IFS
-
         while IFS='=' read arg1 arg2; do
-            if [ "$arg1" = "ISP_RX_LIMIT" ]; then
+            if [ "$arg1" = "LAN_INTERFACE_SPEED_LIMIT" ]; then
+                LAN_INTERFACE_SPEED_LIMIT=$arg2
+            elif [ "$arg1" = "ISP_RX_LIMIT" ]; then
                 ISP_RX_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "ISP_TX_LIMIT" ]; then
+            elif [ "$arg1" = "ISP_TX_LIMIT" ]; then
                 ISP_TX_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "LAN_UNCLASSIFIED_RATE_LIMIT" ]; then
+            elif [ "$arg1" = "LAN_UNCLASSIFIED_RATE_LIMIT" ]; then
                 LAN_UNCLASSIFIED_RATE_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "LAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
+            elif [ "$arg1" = "LAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
                 LAN_UNCLASSIFIED_CEIL_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "WAN_UNCLASSIFIED_RATE_LIMIT" ]; then
+            elif [ "$arg1" = "WAN_UNCLASSIFIED_RATE_LIMIT" ]; then
                 WAN_UNCLASSIFIED_RATE_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "WAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
+            elif [ "$arg1" = "WAN_UNCLASSIFIED_CEIL_LIMIT" ]; then
                 WAN_UNCLASSIFIED_CEIL_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "GW_TO_LAN_RATE_LIMIT" ]; then
+            elif [ "$arg1" = "GW_TO_LAN_RATE_LIMIT" ]; then
                 GW_TO_LAN_RATE_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "GW_TO_LAN_CEIL_LIMIT" ]; then
+            elif [ "$arg1" = "GW_TO_LAN_CEIL_LIMIT" ]; then
                 GW_TO_LAN_CEIL_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "GW_TO_RATE_WAN_LIMIT" ]; then
+            elif [ "$arg1" = "GW_TO_WAN_RATE_LIMIT" ]; then
                 GW_TO_WAN_RATE_LIMIT=$arg2
-            fi
-            if [ "$arg1" = "GW_TO_WAN_CEIL_LIMIT" ]; then
+            elif [ "$arg1" = "GW_TO_WAN_CEIL_LIMIT" ]; then
                 GW_TO_WAN_CEIL_LIMIT=$arg2
+            elif [ "$arg1" = "GW_TO_LAN_PRIORITY" ]; then
+                GW_TO_LAN_PRIORITY=$arg2
+            elif [ "$arg1" = "GW_TO_WAN_PRIORITY" ]; then
+                GW_TO_WAN_PRIORITY=$arg2
+            elif [ "$arg1" = "LAN_UNCLASSIFIED_PRIORITY" ]; then
+                LAN_UNCLASSIFIED_PRIORITY=$arg2
+            elif [ "$arg1" = "WAN_UNCLASSIFIED_PRIORITY" ]; then
+                WAN_UNCLASSIFIED_PRIORITY=$arg2
+            elif [ "$arg1" = "LAN_HOSTS_PRIORITY" ]; then
+                LAN_HOSTS_PRIORITY=$arg2
+            elif [ "$arg1" = "WAN_HOSTS_PRIORITY" ]; then
+                WAN_HOSTS_PRIORITY=$arg2
             fi
         done < <(cat $confdir/$shaper_file|grep -v \#)
-
-    IFS=$delimiter
-
+        IFS=$delimiter
+  
+            if [ -z "$LAN_INTERFACE_SPEED_LIMIT" ]; then
+                LAN_INTERFACE_SPEED_LIMIT=$DEFAULT_LAN_INTERFACE_SPEED_LIMIT
+            fi
             if [ -z "$ISP_RX_LIMIT" ]; then
                 ISP_RX_LIMIT=$DEFAULT_ISP_RX_LIMIT
             fi
@@ -120,8 +126,31 @@ if [ "$1" = "start" ]; then
             if [ -z "$GW_TO_WAN_CEIL_LIMIT" ]; then
                 GW_TO_WAN_CEIL_LIMIT=$DEFAULT_GW_TO_WAN_CEIL_LIMIT
             fi
+            if [ -z "$GW_TO_LAN_PRIORITY" ]; then
+                GW_TO_LAN_PRIORITY=$DEFAULT_GW_TO_LAN_PRIORITY
+            fi
+            if [ -z "$GW_TO_WAN_PRIORITY" ]; then
+                GW_TO_WAN_PRIORITY=$DEFAULT_GW_TO_WAN_PRIORITY
+            fi
+            if [ -z "$LAN_UNCLASSIFIED_PRIORITY" ]; then
+                LAN_UNCLASSIFIED_PRIORITY=$DEFAULT_LAN_UNCLASSIFIED_PRIORITY
+            fi
+            if [ -z "$WAN_UNCLASSIFIED_PRIORITY" ]; then
+                WAN_UNCLASSIFIED_PRIORITY=$DEFAULT_WAN_UNCLASSIFIED_PRIORITY
+            fi
+            if [ -z "$LAN_HOSTS_PRIORITY" ]; then
+                LAN_HOSTS_PRIORITY=$DEFAULT_LAN_HOSTS_PRIORITY
+            fi
+            if [ -z "$WAN_HOSTS_PRIORITY" ]; then
+                WAN_HOSTS_PRIORITY=$DEFAULT_WAN_HOSTS_PRIORITY
+            fi
+            if [ -z "$BURST" ]; then
+                BURST=""
+            else
+                BURST="burst $BURST"
+            fi
 
-
+        echo LAN_INTERFACE_SPEED_LIMIT=$LAN_INTERFACE_SPEED_LIMIT
         echo ISP_RX_LIMIT=$ISP_RX_LIMIT
         echo ISP_TX_LIMIT=$ISP_TX_LIMIT
         echo LAN_UNCLASSIFIED_RATE_LIMIT=$LAN_UNCLASSIFIED_RATE_LIMIT
@@ -132,9 +161,13 @@ if [ "$1" = "start" ]; then
         echo GW_TO_LAN_CEIL_LIMIT=$GW_TO_LAN_CEIL_LIMIT
         echo GW_TO_WAN_RATE_LIMIT=$GW_TO_WAN_RATE_LIMIT
         echo GW_TO_WAN_CEIL_LIMIT=$GW_TO_WAN_CEIL_LIMIT
-
-        BURST="burst 15k"
-
+        echo GW_TO_LAN_PRIORITY=$GW_TO_LAN_PRIORITY
+        echo GW_TO_WAN_PRIORITY=$GW_TO_WAN_PRIORITY
+        echo LAN_UNCLASSIFIED_PRIORITY=$LAN_UNCLASSIFIED_PRIORITY
+        echo WAN_UNCLASSIFIED_PRIORITY=$WAN_UNCLASSIFIED_PRIORITY
+        echo LAN_HOSTS_PRIORITY=$LAN_HOSTS_PRIORITY
+        echo WAN_HOSTS_PRIORITY=$WAN_HOSTS_PRIORITY
+ 
 #LAN
         if [ ! -z "$LAN" ]; then
 
