@@ -56,8 +56,8 @@ Następnie dla każdego hosta powinny być określone parametry klas UP/DOWN HTB
 
 Przykładowa konfiguracja dla jednego hosta przypisanego do jednej pary klas UP/DOWN:
 
-#konfiguracja komputerów klientów customer 1
-
+#konfiguracja komputerów klientów</br>
+customer 1</br>
 class_up 8kbit 1024kbit</br>
 class_down 8kbit 5120kbit</br>
 filter 192.168.101.24</br>
