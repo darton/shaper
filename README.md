@@ -1,7 +1,7 @@
 # shaper
 Wymagane oprogramowanie: iptables, ipset, iproute2.
 
-Plik musi zaczynać się od deklaracji poniższych parametrów. Jeśli te parametry nie zostaną podane, zostaną użyte domyślne parametry określone w pliku fw.conf.
+Plik musi zaczynać się od deklaracji poniższych parametrów. Jeśli te parametry nie zostaną podane, zostaną użyte domyślne parametry określone w pliku shaper.conf.
 
 ISP_RX_LIMIT=470000kbit</br>
 ISP_TX_LIMIT=470000kbit</br>
