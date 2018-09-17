@@ -48,9 +48,8 @@ if [ "$1" = "stop" ]; then
         tc qdisc del dev $WAN root 2> /dev/null
         iptables -t mangle -F
         iptables -t mangle -X
-fi
 
-if [ "$1" = "start" ]; then
+elif [ "$1" = "start" ]; then
 
         shaper_cmd stop
         delimiter=$IFS
@@ -179,11 +178,11 @@ if [ "$1" = "start" ]; then
         tc class add dev $LAN parent 1:1 classid 1:2 htb rate $ISP_RX_LIMIT ceil $ISP_RX_LIMIT $BURST quantum 1500
 
 #Set default limit for traffic from Internet to LAN
-        tc class add dev $LAN parent 1:1 classid 1:3 htb rate $LAN_UNCLASSIFIED_RATE_LIMIT ceil $LAN_UNCLASSIFIED_CEIL_LIMIT prio 7 quantum 1500
+        tc class add dev $LAN parent 1:1 classid 1:3 htb rate $LAN_UNCLASSIFIED_RATE_LIMIT ceil $LAN_UNCLASSIFIED_CEIL_LIMIT prio $LAN_UNCLASSIFIED_PRIORITY quantum 1500
         tc qdisc add dev $LAN parent 1:3 sfq perturb 10
 
 #Set limit from for traffic from GATEWAY to LAN
-        tc class add dev $LAN parent 1:1 classid 1:4 htb rate $GW_TO_LAN_RATE_LIMIT ceil $GW_TO_LAN_CEIL_LIMIT $BURST prio 4 quantum 1500
+        tc class add dev $LAN parent 1:1 classid 1:4 htb rate $GW_TO_LAN_RATE_LIMIT ceil $GW_TO_LAN_CEIL_LIMIT $BURST prio $GW_TO_LAN_PRIORITY quantum 1500
         tc qdisc add dev $LAN parent 1:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $LAN -j CLASSIFY --set-class 1:4
 
@@ -197,11 +196,11 @@ if [ "$1" = "start" ]; then
         tc class add dev $WAN parent 2:0 classid 2:1 htb rate $ISP_TX_LIMIT ceil $ISP_TX_LIMIT $BURST quantum 1500
 
 # Set default limit for traffic from WAN to Internet
-        tc class add dev $WAN parent 2:1 classid 2:3 htb rate $WAN_UNCLASSIFIED_RATE_LIMIT ceil $WAN_UNCLASSIFIED_CEIL_LIMIT prio 7 quantum 1500
+        tc class add dev $WAN parent 2:1 classid 2:3 htb rate $WAN_UNCLASSIFIED_RATE_LIMIT ceil $WAN_UNCLASSIFIED_CEIL_LIMIT prio $WAN_UNCLASSIFIED_PRIORITY quantum 1500
         tc qdisc add dev $WAN parent 2:3 sfq perturb 10
 
 #Set limit for traffic from GATEWAY to WAN
-        tc class add dev $WAN parent 2:1 classid 2:4 htb rate $GW_TO_WAN_RATE_LIMIT ceil $GW_TO_WAN_CEIL_LIMIT $BURST prio 4 quantum 1500
+        tc class add dev $WAN parent 2:1 classid 2:4 htb rate $GW_TO_WAN_RATE_LIMIT ceil $GW_TO_WAN_CEIL_LIMIT $BURST prio $GW_TO_WAN_PRIORITY quantum 1500
         tc qdisc add dev $WAN parent 2:4 sfq perturb 10
         iptables -t mangle -A OUTPUT -o $WAN -j CLASSIFY --set-class 2:4
 
@@ -209,7 +208,7 @@ if [ "$1" = "start" ]; then
 
 #Set limit for Customers host
 
-        network_list=$(cat $confdir/$shaper_file |grep filter |awk '{print $3}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
+        network_list=$(cat $confdir/$shaper_file |grep filter |awk '{print $2}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
 
         for net in $network_list; do
             iptables -t mangle -N COUNTERSIN$net
@@ -218,45 +217,39 @@ if [ "$1" = "start" ]; then
             iptables -t mangle -I FORWARD -o $WAN -s $net.0/24 -j COUNTERSOUT$net
         done
 
+        h=99
         while read arg1 arg2 arg3 arg4; do
-        if [ ! -z "$WAN" ]; then
-            if [ "$arg2" = "class_up" ]; then
-                tc class add dev $WAN parent 2:1 classid 2:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
-                tc qdisc add dev $WAN parent 2:$arg1 sfq perturb 10
-            fi
-        fi
-        if [ ! -z "$LAN" ]; then
-            if [ "$arg2" = "class_down" ]; then
-                tc class add dev $LAN parent 1:2 classid 1:$arg1 htb rate $arg3 ceil $arg4 $BURST prio 2 quantum 1500
-                tc qdisc add dev $LAN parent 1:$arg1 sfq perturb 10
-            fi
-        fi
-            if [ "$arg2" = "filter" ]; then
-                echo $arg3 | { IFS='.' read -r octet1 octet2 octet3 octet4;
-                iptables -t mangle -A COUNTERSOUT$octet1.$octet2.$octet3 -s $arg3 -j CLASSIFY --set-class 2:$arg1;
-                iptables -t mangle -A COUNTERSIN$octet1.$octet2.$octet3 -d $arg3 -j CLASSIFY --set-class 1:$arg1; }
+            if [ "$arg1" = "class_up" ]; then
+                let h=$h+1
+                tc class add dev $WAN parent 2:1 classid 2:$h htb rate $arg2 ceil $arg3 $BURST prio $WAN_HOSTS_PRIORITY quantum 1500
+                tc qdisc add dev $WAN parent 2:$h sfq perturb 10
+            elif [ "$arg1" = "class_down" ]; then
+                tc class add dev $LAN parent 1:2 classid 1:$h htb rate $arg2 ceil $arg3 $BURST prio $LAN_HOSTS_PRIORITY quantum 1500
+                tc qdisc add dev $LAN parent 1:$h sfq perturb 10
+            elif [ "$arg1" = "filter" ]; then
+                echo $arg2 | { IFS='.' read -r octet1 octet2 octet3 octet4;
+                iptables -t mangle -A COUNTERSOUT$octet1.$octet2.$octet3 -s $arg2 -j CLASSIFY --set-class 2:$h;
+                iptables -t mangle -A COUNTERSIN$octet1.$octet2.$octet3 -d $arg2 -j CLASSIFY --set-class 1:$h; }
             fi
         done < <(cat $confdir/$shaper_file|grep -v \#)
-fi
 
-if [ "$1" = "stats" ]; then
-
-        for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
-            iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $8 " "$2}' |grep -v 0.0.0.0 >> /tmp/upload.tmp
-        done
-        for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSIN |awk '{print $1}'); do
-            iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $9 " "$2}' |grep -v 0.0.0.0 >> /tmp/download.tmp
-        done
-        iptables -t mangle -Z
-        join /tmp/upload.tmp /tmp/download.tmp | grep -v  " 0 0"
-        rm /tmp/upload.tmp /tmp/download.tmp
-
-fi
-
-if [ "$1" = "status" ]; then
+elif [ "$1" = "stats" ]; then
+        IPT_TABLE_CC=$(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}')
+        if [ ! -z "$IPT_TABLE_CC" ]; then
+            for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
+                iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $8 " "$2}' |grep -v 0.0.0.0 >> /tmp/upload.tmp
+            done
+            for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSIN |awk '{print $1}'); do
+                iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $9 " "$2}' |grep -v 0.0.0.0 >> /tmp/download.tmp
+            done
+            iptables -t mangle -Z
+            join /tmp/upload.tmp /tmp/download.tmp | grep -v  " 0 0"
+            rm /tmp/upload.tmp /tmp/download.tmp
+        fi
+        
+elif [ "$1" = "status" ]; then
 
     iptables -t mangle -nvL
-
     echo
     echo "$LAN interface"
     echo "----------------"
