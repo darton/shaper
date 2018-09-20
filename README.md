@@ -1,5 +1,5 @@
 # shaper
-Wymagane oprogramowanie: iptables, ipset, iproute2, bash, grep, awk, join 
+Wymagane oprogramowanie: iptables, ipset, iproute2, bash, grep, awk, coreutils 
 
 Plik musi zaczynać się od deklaracji poniższych parametrów. Jeśli te parametry nie zostaną podane, zostaną użyte domyślne parametry określone w pliku shaper.sh.
 
