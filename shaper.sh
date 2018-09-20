@@ -175,7 +175,7 @@ elif [ "$1" = "start" ]; then
 
 # Set global limit for LAN interface
         tc qdisc add dev $LAN root handle 1:0 htb default 3 r2q 1
-        tc class add dev $LAN parent 1:0 classid 1:1 htb rate 900000kbit ceil 900000kbit $BURST quantum 1500
+        tc class add dev $LAN parent 1:0 classid 1:1 htb rate $LAN_INTERFACE_SPEED_LIMIT ceil $LAN_INTERFACE_SPEED_LIMIT $BURST quantum 1500
 
 # Set limit for all traffic from Internet to LAN
         tc class add dev $LAN parent 1:1 classid 1:2 htb rate $ISP_RX_LIMIT ceil $ISP_RX_LIMIT $BURST quantum 1500
