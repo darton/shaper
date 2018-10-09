@@ -1,7 +1,7 @@
 # shaper
 Wymagane oprogramowanie: iptables, ipset, iproute2, bash, grep, awk, coreutils 
 
-Plik musi zaczynać się od deklaracji poniższych parametrów. Jeśli te parametry nie zostaną podane, zostaną użyte domyślne parametry określone w pliku shaper.sh.
+Plik shaper.conf musi zaczynać się od deklaracji poniższych parametrów. Jeśli te parametry nie zostaną podane, zostaną użyte domyślne parametry określone w pliku shaper.sh.
 
 ISP_RX_LIMIT=450000kbit</br>
 ISP_TX_LIMIT=450000kbit</br>
