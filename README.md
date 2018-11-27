@@ -38,7 +38,7 @@ WAN_UNCLASSIFIED_RATE_LIMIT to gwarantowana prędkość dla ruchu wychodzącego 
 
 WAN_UNCLASSIFIED_CEIL_LIMIT to limit dla ruchu wychodzącego do sieci WAN nie sklasyfikowanego, czyli komputerów urządzeń nie ujętych w pliku konfiguracyjnym dla modułu Shaper</br>
 
-W siedmiostopniowej skali od 1 do 7 gdzie 1 oznacza najwyższy prioryter a 7 najniższy okraślane sa także prirytety dla nastepującyh grup.</br>
+W siedmiostopniowej skali od 1 do 7 gdzie 1 oznacza najwyższy priorytet a 7 najniższy określane są priorytety:</br>
 
 GW_TO_LAN_PRIORITY - proprytet dla pakietów wysyłanych z GW do sieci LAN.</br>
 
