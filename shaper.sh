@@ -211,7 +211,7 @@ elif [ "$1" = "start" ]; then
 
 #Set limit for Customers host
 
-        network_list=$(cat $confdir/$shaper_file |grep filter |awk '{print $2}'|awk -F\. '{print $1"."$2"."$3}'|sort -u)
+        network_list=$(awk '/filter / {print $2;}' $confdir/$shaper_file | awk -F\. '{print $1"."$2"."$3}'|sort -u)
 
         for net in $network_list; do
             iptables -t mangle -N COUNTERSIN$net
@@ -238,12 +238,12 @@ elif [ "$1" = "start" ]; then
         done < <(cat $confdir/$shaper_file|grep -v \#)
 
 elif [ "$1" = "stats" ]; then
-        IPT_TABLE_CC=$(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}')
+        IPT_TABLE_CC=$(iptables -t mangle -nL FORWARD |awk '/COUNTERSOUT/{print $1}')
         if [ ! -z "$IPT_TABLE_CC" ]; then
-            for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSOUT |awk '{print $1}'); do
+            for IPT_TABLE_ELEMENT in $IPT_TABLE_CC; do
                 iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $8 " "$2}' |grep -v 0.0.0.0 >> /tmp/upload.tmp
             done
-            for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD |grep COUNTERSIN |awk '{print $1}'); do
+            for IPT_TABLE_ELEMENT in $(iptables -t mangle -nL FORWARD | awk '/COUNTERSIN/{print $1}'); do
                 iptables -t mangle -nvxL $IPT_TABLE_ELEMENT |tail -n +3 | awk '{print $9 " "$2}' |grep -v 0.0.0.0 >> /tmp/download.tmp
             done
             iptables -t mangle -Z
